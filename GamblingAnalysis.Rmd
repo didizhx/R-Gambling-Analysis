@@ -1,0 +1,285 @@
+---
+title: "Bwin Marketing Analysis on Poker and other games"
+author: "MA Mui Han, SRIPADA Saisumanth, ZHAKSYBEK Dilda"
+date: "12/18/2021"
+output: pdf_document
+---
+
+```{r datainclude = FALSE, echo = FALSE,warning = FALSE,message = FALSE, results='hide'}
+if(!require("tidyr")) install.packages("tidyr"); library("tidyr")
+if(!require("ggplot2")) install.packages("ggplot2"); library("ggplot2")
+if(!require("dplyr")) install.packages("dplyr"); library("dplyr")
+if(!require("stringr")) install.packages("stringr"); library("stringr")
+if(!require("maps")) install.packages("maps"); library("maps")
+if (!require(rfm)) install.packages("rfm"); library("rfm")
+library(readr)
+library(dplyr)
+library(ggplot2)
+```
+
+```{r datainclude = FALSE , echo= FALSE}
+datamart <- read.csv("datamart.csv")
+PokerChipConversions <- read.csv("PokerChipConversions.csv")
+```
+
+## Bwin marketing analysis
+
+##### This is a marketing analysis on Poker and other games for bwin. It includes an overview of the various Marketing Metrics and visual representation of Poker and other games for better understanding the data. In total, there are 93 variables in the User datamart
+
+##### To see the total for all games, the buy transactions in PokerChipConversions are treated as stakes, assuming all the chips the customers got are eventually bet to the Poker games. Vice versa, the sell transactions in PokerChipConversions are treated as Winnings, assuming the customers sold all their chips on hand to get back the money they have.
+
+##  Data Cleaning and Data Preparation  
+
+Datamart was created as the customer base by cleaning original data :
+
+ * Customers who registered between 1 Feb 2005 and 27 Feb 2005 and with his/her First Active date are selected
+ 
+ * Activities between 1 Feb 2005 and 30 Sep 2005 ("the period") are selected
+
+ * Date Format was changed
+ 
+ * Null values were treated
+ 
+ * New variables were created for both the PokerChipConversions and UserDailyAggregation for better understanding on the data and to get the useful insights.
+ 
+ * Wider format is created for the data and finally formed the datamart by merging the data with unique UserID.
+ 
+ * RFM Score was calculated for each of the customers which provides info on the customer gaming patterns.
+ 
+ * Total stakes, Total Bets, Total Winnings and Total Transactions were calculated for each customer
+ 
+\newpage
+## Shiny Application
+
+ * Shiny Application is made available for the detailed Analysis of Users 
+ 
+ It includes the followings:
+ 
+ * Top Ranking by Country and by Application
+
+ * Customer Profiling which includes
+ 
+    (i)   User distribution by application, gender and language;
+    (ii)  World Maps Based on Number of Users, Total Bets, Amount Spent and Total Winnings; and
+    (iii) Customer Loyalty based on total money spent
+ 
+ * Recency, Frequency & Monetary Analysis
+ 
+ * Poker Analysis
+ 
+ * Other Games Analysis
+
+## Initial Insights
+
+ *  There are 42,646 qualified users (Male - 39,058 & Female - 3,588)
+ 
+ *  Germany has the most number of users (24,169), followed by Turkey (2,477) and Poland (2,417)
+ 
+ *  Most number of players play poker in March 
+ 
+ *  Over 65% of the customers spent less than or equal to EUR500 during the period
+ 
+ The following sections give simple reviews to some significant analysis.
+ 
+\newpage 
+## Top Ranking overview
+
+### Top Country
+
+ * The below lot show the Top 10 Countries by most number of Users.
+ 
+ *  Germany has the highest number of users followed by Turkey and Poland .
+
+
+```{r countriesPlot, echo = FALSE, message = FALSE, warning = FALSE ,out.width ='440px',out.height='350px' }
+country_filtered <- datamart %>% group_by(Country.Name) %>%
+  summarise(nbr_users = n(),
+            country_total_stakes = sum(total_stakes),
+            country_total_winnings = sum(total_winnings),
+            country_total_bets = sum(total_bets))
+
+
+t10countriesnbr <- top_n(country_filtered, 10, nbr_users)
+t10countriesusers <- ggplot(t10countriesnbr, aes(x=reorder(Country.Name,-nbr_users), y= nbr_users,fill=Country.Name )) +
+  geom_col( ) +
+  scale_fill_hue(c = 40) +
+  theme(legend.position="none")+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line.x = element_line(colour = "black"),
+        axis.ticks.y=element_blank()) +
+  labs(title = "TOP 10 Countries By No.Of.Users",x = "Countries", y= "Number of Users")
+t10countriesusers
+```
+
+\newpage
+### Top Application
+
+* The following graph shows the top 5 Applications by number of users.
+
+* Users preferred BETANDWIN application to others which has over 20,000 users.
+
+```{r ApplicationsPlot, echo = FALSE, message = FALSE, warning = FALSE ,out.width ='350px',out.height='350px' }
+
+App_filtered <- datamart %>% group_by(Application.Description) %>%
+  summarise(App_total_users = n(),
+            App_total_stakes = sum(total_stakes),
+            App_total_winnings = sum(total_winnings),
+            App_total_bets = sum(total_bets))
+t5Appsnbr <- top_n(App_filtered, 5, App_total_users)
+
+t5Appsusers <- ggplot(t5Appsnbr, aes(x=reorder(Application.Description,-App_total_users), y= App_total_users,fill=Application.Description)) + 
+  geom_col( ) +
+  coord_flip() +
+  theme(legend.position="none")+
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line.x = element_line(colour = "black"),
+        axis.ticks.y=element_blank()) +
+  scale_fill_manual("Teams",values = c('#F0B27A', '#5DADE2','#F9E79F','#E74C3C','#CACFD2'))+
+  labs(title = "TOP 5 Applications By No.Of.Users",x = "Applications", y= "Number of Users")
+t5Appsusers
+
+
+
+```
+
+* Similarly, BETANDWIN.com app has the highest stakes from the users.
+```{r ApplicationsPlot2, echo = FALSE, message = FALSE, warning = FALSE ,out.width ='350px',out.height='350px' }
+t5AppsS <- top_n(App_filtered, 5, App_total_stakes)
+t5Appsstakes <- ggplot(t5AppsS, aes(x=reorder(Application.Description,-App_total_stakes), y= App_total_stakes/1000000,fill=Application.Description)) + 
+  geom_col( ) +
+  coord_flip() +
+  theme(legend.position="none") +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line.x = element_line(colour = "black"),
+        axis.ticks.y=element_blank()) +
+  labs(title = "TOP 5 Apps By Stakes(Millions)",x = "Applications", y= "Total stakes (Millions)")+
+  scale_fill_manual("Teams",values = c('#F0B27A', '#5DADE2','#F9E79F','#E74C3C','#CACFD2'))
+t5Appsstakes + scale_y_continuous(labels = function(x) format(x, scientific = FALSE))
+```
+\newpage
+
+## Customer Profiling overview
+
+### Users Distribution
+
+A bar chart is shown for the selected element within the followings, (i) Application, (ii) Gender and (iii) Language.
+
+* Majority of the players were Male
+
+```{r CustProfiling1, echo = FALSE, message = FALSE, warning = FALSE ,out.width ='360px',out.height='360px' }
+
+gen <- datamart %>% group_by(Gender) %>% 
+  summarise(count = n())
+
+gen <- na.omit(gen)
+
+genplot <- ggplot(gen,
+                   aes(x = reorder(Gender, -count),y= count, fill = Gender))+
+  geom_bar(stat = "Identity", width = 0.3) + coord_flip()+ theme(legend.position="none") +
+  labs(title = "Users Gender" , x = "Gender",y = "Number of Users")
+genplot
+
+```
+
+* Most of the Users speak German
+
+```{r CustProfiling2, echo = FALSE, message = FALSE, warning = FALSE ,out.width ='360px',out.height='360px' }
+
+lang <- datamart %>% group_by(Language.Description) %>% 
+  summarise(nbr_speakers = n())
+
+lang <- top_n(lang,10,nbr_speakers)
+
+plot1 <- ggplot(lang,
+                aes(x = reorder(Language.Description, -nbr_speakers),y= nbr_speakers, fill = Language.Description))+
+  geom_bar(stat = "Identity") + coord_flip()+ theme(legend.position="none")+ 
+  labs(title  ="Language Distribution of Users", x= "Language",y = "Count")
+
+plot1
+
+```
+
+\newpage
+### User Map
+A map graph is shown for the selected element within the followings, (i) Total Users per Country, (ii) Total Bets Per Country, (iii) Amount Spent Per Country and (iv) Total Winnings Per Country.
+
+The following graph shows the number of customers in each of the country.
+
+```{r CountriesMap, echo = FALSE, message = FALSE, warning = FALSE ,out.width ='350px',out.height='350px' }
+#getting map data
+mapdata <- map_data("world")
+mapdata <- mapdata %>% rename(Country.Name = region)
+mapdata$Country.Name <- as.character(mapdata$Country.Name)
+
+
+datamart_country <- datamart %>% group_by(Country.Name) %>%
+  summarise(nbr_users = n(),
+            Totbets = sum(total_bets),
+            totspent = sum(total_stakes),
+            totwinning = sum(total_winnings))
+
+
+country_df <- left_join(datamart_country,mapdata, by = "Country.Name")
+
+
+####################### TOTAL USERS PER COUNTRY ####################
+country_df <- country_df %>% filter (!is.na(country_df$nbr_users))
+map1 <- ggplot(country_df,aes (x= long , y = lat, group = group )) +
+  geom_polygon(aes (fill= nbr_users),color = "black")  +labs(title = "Countries by Number of  Users", fill = "Number of Users") +
+  theme_void()
+map1
+
+```
+
+* Europe is the region with the most number of Bets
+
+```{r CountriesMap2, echo = FALSE, message = FALSE, warning = FALSE ,out.width ='360px',out.height='360px' }
+country_df <- country_df %>% filter (!is.na(country_df$Totbets))
+map3 <- ggplot(country_df,aes (x= long , y = lat, group = group)) +
+  geom_polygon(aes (fill= Totbets/1000),color = "black")+
+  scale_fill_viridis_c(option = "plasma",trans = 'sqrt')+labs(title = "Countires by Number of Bets", fill = "Total Bets in Thousands") +
+  theme_void()
+map3
+
+```
+
+
+\newpage
+
+
+## Poker Analysis overview
+
+
+* About 25,000 Transactions were observed in the Month of March which is the highest from the data available and lowest number of users played Poker in February
+
+
+```{r PokerAnalysis, echo = FALSE, message = FALSE, warning = FALSE ,out.width ='360px',out.height='360px' }
+
+pokermonth <- PokerChipConversions %>% group_by(TransMonth,TransType) %>%
+  summarise(nbr_transactions = n())
+
+pokermonth <- pokermonth %>% drop_na(TransMonth)
+
+pokermonth <- pokermonth %>% mutate(Month = month.name[TransMonth])
+
+pokermonth <- subset(pokermonth, Month != 'October')
+
+pokermonthplot <- ggplot(pokermonth, aes(x = reorder(Month,-nbr_transactions), y = nbr_transactions, fill = TransType)) +
+  geom_bar(stat = "identity", position = "dodge")+
+  scale_y_continuous(breaks=seq(0, 30000,5000)) +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        panel.background = element_blank(), axis.line.x = element_line(colour = "black"),
+        axis.ticks.y=element_blank()) +
+  scale_fill_manual("Teams",values = c('#F0B27A', '#5DADE2'))+
+labs(title = "Poker Transactions By Month",x = "Month", y= "Total Transactions")
+pokermonthplot
+
+```
+
+* Overall, Players prefer to play poker mostly on Friday compared to the rest of the days in the week, but there is no significant differences between weekdays.
+
+* For males, the higher the number of buy transactions, the more likely net amount is to be at Win. While for females, the higher the number of buy transactions, the more likely net amount is to be at loss.
+
+## Other Games overview
+
+* Analyzing game other than poker, Total Winnings grow proportionally to the number of stakes made, but most of them less than the 45 degree line, which means the customers lose money. While the correlation of total winnings to total bets is less steep.
