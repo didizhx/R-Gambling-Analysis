@@ -1,4 +1,3 @@
-setwd("C:/Users/mma/Downloads/Semester 1/BUSINESS ANALYTICS TOOLS OPEN SOURCE/Group Project/Group Project Final/")
 
 #LOADING REQUIRED PACKAGES
 if (!require(dplyr)) install.packages('dplyr')
